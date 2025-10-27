@@ -1,0 +1,39 @@
+{
+  "name": "iot-fleet-monitoring-system",
+  "version": "1.0.0",
+  "description": "Sistema de monitoreo IoT para flotas vehiculares - Full Stack (NestJS + React)",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd apps/backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd apps/backend && npm run start:dev",
+    "dev:frontend": "cd apps/frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd apps/backend && npm run build",
+    "build:frontend": "cd apps/frontend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd apps/backend && npm run test",
+    "test:frontend": "cd apps/frontend && npm run test"
+  },
+  "keywords": [
+    "iot",
+    "fleet-monitoring",
+    "nestjs",
+    "react",
+    "websockets",
+    "gps-tracking"
+  ],
+  "author": "Juan Martinez",
+  "license": "",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
