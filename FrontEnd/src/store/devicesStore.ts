@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Device } from '../type';
 
+// Estado de la aplicación
 interface DevicesState {
   devices: Device[];
   selectedDevice: Device | null;
@@ -12,7 +13,7 @@ interface DevicesState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
-
+    // Crear store de dispositivos
 export const useDevicesStore = create<DevicesState>((set) => ({
   devices: [],
   selectedDevice: null,

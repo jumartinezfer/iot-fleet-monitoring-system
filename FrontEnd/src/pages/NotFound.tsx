@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Home } from 'lucide-react';
 
+// Página de error 404
 const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">

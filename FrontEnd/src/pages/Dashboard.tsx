@@ -9,13 +9,14 @@ import MapView from '../components/map/MapView';
 import SensorChart from '../components/dashboard/SensorChart';
 import { AlertTriangle, Activity, Thermometer, Fuel, Loader2, TrendingUp, Navigation } from 'lucide-react';
 
+// Página principal del dashboard
 const Dashboard = () => {
   const { user } = useAuthStore();
   const { devices, setDevices } = useDevicesStore();
   const { sensorData, alerts, addSensorData, addAlert, setAlerts, setSensorData } = useSensorsStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
+    // Cargar datos
   useEffect(() => {
     if (!user) {
       console.warn('Usuario no encontrado, redirigiendo al login');
@@ -25,17 +26,17 @@ const Dashboard = () => {
     loadData();
     setupWebSocket();
   }, [user]);
-
+    // Función para cargar datos
   const loadData = async () => {
     try {
       setLoading(true);
       setError('');
       console.log('🔄 Cargando datos del dashboard...');
-      
+        // Obtener datos de los dispositivos
       const devicesData = await devicesService.getAll();
       console.log('✅ Dispositivos cargados:', devicesData);
       setDevices(devicesData || []);
-
+        // Obtener datos de los sensores
       if (devicesData && devicesData.length > 0) {
         try {
           const latestData = await sensorsService.getLatestData(
@@ -43,7 +44,7 @@ const Dashboard = () => {
             20
           );
           console.log('✅ Datos de sensores recibidos:', latestData);
-
+            // Preparar datos para el gráfico
           if (latestData && Array.isArray(latestData)) {
             const parsedData = latestData.map(item => ({
               ...item,
@@ -54,14 +55,14 @@ const Dashboard = () => {
               speed: Number(item.speed) || 0,
               fuelConsumptionRate: Number(item.fuelConsumptionRate) || 0,
             }));
-
+            // Actualizar datos de sensores
             setSensorData(parsedData);
           }
         } catch (sensorErr: any) {
           console.log('⚠️ No hay datos de sensores:', sensorErr.message);
         }
       }
-
+        // Obtener alertas
       if (user?.role === 'admin') {
         try {
           const alertsData = await sensorsService.getActiveAlerts();
@@ -71,7 +72,7 @@ const Dashboard = () => {
           console.log('⚠️ No hay alertas:', alertErr.message);
         }
       }
-
+        // Mostrar mensaje de éxito
       console.log('✅ Dashboard cargado exitosamente');
     } catch (err: any) {
       console.error('❌ Error al cargar dashboard:', err);
@@ -80,11 +81,11 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
-
+    // Configurar WebSocket
   const setupWebSocket = () => {
     try {
       console.log('🌐 Configurando WebSocket...');
-      
+        // Evento de nueva data
       websocketService.onSensorData((data) => {
         console.log('📡 WebSocket - Nueva data:', data);
         const parsedData = {
@@ -96,20 +97,22 @@ const Dashboard = () => {
           speed: Number(data.speed),
           fuelConsumptionRate: Number(data.fuelConsumptionRate),
         };
+        // Añadir datos de sensores
         addSensorData(parsedData as any);
       });
-
+        // Evento de nueva alerta
       if (user?.role === 'admin') {
         websocketService.onAlert((alert) => {
           console.log('🚨 WebSocket - Nueva alerta:', alert);
           addAlert(alert);
         });
       }
+      // Evento de error
     } catch (err) {
       console.error('❌ Error configurando WebSocket:', err);
     }
   };
-
+    // Mostrar cargando
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -121,7 +124,7 @@ const Dashboard = () => {
       </div>
     );
   }
-
+    // Mostrar error
   if (error) {
     return (
       <div className="max-w-2xl mx-auto mt-8">
@@ -138,7 +141,7 @@ const Dashboard = () => {
       </div>
     );
   }
-
+    // Datos más recientes
   const latestSensorData = sensorData && sensorData.length > 0 ? sensorData[0] : null;
 
   return (
@@ -167,7 +170,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
+            {/* Gráfico de alertas */}
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 hover:shadow-xl transition">
           <div className="flex items-center justify-between">
             <div>
@@ -179,7 +182,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
+            {/* Gráfico de combustible */}
         {latestSensorData && (
           <>
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition">
@@ -195,7 +198,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-
+            {/* Gráfico de temperatura */}
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition">
               <div className="flex items-center justify-between">
                 <div>
@@ -212,7 +215,6 @@ const Dashboard = () => {
           </>
         )}
       </div>
-
       {/* Mapa y Gráficos */}
       {sensorData && sensorData.length > 0 && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -263,6 +265,7 @@ const Dashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Estado</th>
                 </tr>
               </thead>
+              {/* Datos de sensores */}
               <tbody className="bg-white divide-y divide-gray-200">
                 {sensorData.slice(0, 8).map((data, index) => (
                   <tr key={data.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>

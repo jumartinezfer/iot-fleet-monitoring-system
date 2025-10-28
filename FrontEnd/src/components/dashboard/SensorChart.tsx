@@ -5,6 +5,7 @@ interface SensorChartProps {
   data: SensorData[];
 }
 
+// Gráfico de combustible
 const SensorChart = ({ data }: SensorChartProps) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
@@ -13,12 +14,13 @@ const SensorChart = ({ data }: SensorChartProps) => {
       </div>
     );
   }
-
+  // Preparar datos para el gráfico
   const chartData = [...data].reverse().slice(0, 10).map((item) => ({
     time: new Date(item.timestamp).toLocaleTimeString('es-ES', { 
       hour: '2-digit', 
       minute: '2-digit' 
     }),
+    // Convertir datos a números
     combustible: Number(item.fuelLevel) || 0,
     temperatura: Number(item.temperature) || 0,
     velocidad: Number(item.speed) || 0,
@@ -38,15 +40,18 @@ const SensorChart = ({ data }: SensorChartProps) => {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            {/* X-axis */}
             <XAxis 
               dataKey="time" 
               tick={{ fontSize: 10, fill: '#6b7280' }}
               stroke="#9ca3af"
             />
+            {/* Y-axis */}
             <YAxis 
               tick={{ fontSize: 10, fill: '#6b7280' }}
               stroke="#9ca3af"
             />
+            {/* Tooltip */}
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: '#fff', 
@@ -56,6 +61,7 @@ const SensorChart = ({ data }: SensorChartProps) => {
               }}
               formatter={(value: number) => [`${value.toFixed(1)} L`, 'Combustible']}
             />
+            {/* Gráfico de combustible */}
             <Area 
               type="monotone" 
               dataKey="combustible" 
