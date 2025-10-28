@@ -4,7 +4,6 @@ import { devicesService } from '../services/devices.service';
 import { Plus, Car, Calendar, Hash, Loader2, Edit, Trash2, X, Check, Info } from 'lucide-react';
 import type { Device } from '../types.ts';
 
-// Página para gestionar dispositivos
 const Devices = () => {
   const { devices, setDevices, addDevice } = useDevicesStore();
   const [loading, setLoading] = useState(true);
@@ -18,16 +17,14 @@ const Devices = () => {
     model: '',
     licensePlate: '',
   });
-    // Función para cargar dispositivos
   const [submitting, setSubmitting] = useState(false);
-    // Cargar dispositivos
+
   useEffect(() => {
     loadDevices();
   }, []);
-    // Función para cargar dispositivos
+
   const loadDevices = async () => {
     try {
-        // Cargar dispositivos
       setLoading(true);
       const data = await devicesService.getAll();
       setDevices(data);
@@ -37,19 +34,19 @@ const Devices = () => {
       setLoading(false);
     }
   };
-    // Función para actualizar datos del dispositivo
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
-    // Función para guardar datos del dispositivo
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError('');
-        // Actualizar dispositivo
+
     try {
       if (editingDevice) {
         const response = await fetch(`http://localhost:3000/devices/${editingDevice.id}`, {
@@ -58,16 +55,15 @@ const Devices = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           },
-          // Datos del dispositivo
           body: JSON.stringify({
             name: formData.name,
             model: formData.model,
             licensePlate: formData.licensePlate,
           }),
         });
-            // Verificar respuesta
+
         if (!response.ok) throw new Error('Error al actualizar dispositivo');
-            // Cargar dispositivos
+        
         await loadDevices();
         setShowModal(false);
         setEditingDevice(null);
@@ -76,7 +72,7 @@ const Devices = () => {
         addDevice(newDevice);
         setShowModal(false);
       }
-        // Limpiar formulario
+      
       setFormData({ deviceId: '', name: '', model: '', licensePlate: '' });
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Error al guardar dispositivo');
@@ -84,7 +80,7 @@ const Devices = () => {
       setSubmitting(false);
     }
   };
-    // Función para editar dispositivo
+
   const handleEdit = (device: Device) => {
     setEditingDevice(device);
     setFormData({
@@ -95,12 +91,12 @@ const Devices = () => {
     });
     setShowModal(true);
   };
-    // Función para eliminar dispositivo
+
   const handleDelete = async (device: Device) => {
     if (!window.confirm(`¿Estás seguro de eliminar el dispositivo "${device.name}"?`)) {
       return;
     }
-        // Eliminar dispositivo
+
     try {
       const response = await fetch(`http://localhost:3000/devices/${device.id}`, {
         method: 'DELETE',
@@ -108,21 +104,21 @@ const Devices = () => {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-        // Verificar respuesta
+
       if (!response.ok) throw new Error('Error al eliminar dispositivo');
-        // Cargar dispositivos
+      
       await loadDevices();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar dispositivo');
     }
   };
-    // Función para abrir modal de nuevo dispositivo
+
   const openNewModal = () => {
     setEditingDevice(null);
     setFormData({ deviceId: '', name: '', model: '', licensePlate: '' });
     setShowModal(true);
   };
-    // Mostrar cargando
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
@@ -134,7 +130,7 @@ const Devices = () => {
       </div>
     );
   }
-    // Vista de listado de dispositivos
+
   return (
     <div className="space-y-6 lg:space-y-8 fade-in">
       {/* Header con gradiente */}
@@ -152,8 +148,7 @@ const Devices = () => {
           <button
             onClick={openNewModal}
             className="bg-white text-blue-600 hover:bg-blue-50 font-bold px-6 py-3 lg:px-8 lg:py-4 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 text-sm lg:text-base whitespace-nowrap"
-          >         
-            {/* Botón para abrir modal de nuevo dispositivo */}
+          >
             <Plus size={20} />
             Nuevo Dispositivo
           </button>
@@ -236,7 +231,6 @@ const Devices = () => {
                           : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                        {/* Indicador de activo */}
                       {device.isActive ? '● Activo' : '○ Inactivo'}
                     </span>
                   </div>
@@ -250,7 +244,6 @@ const Devices = () => {
                   <span className="text-gray-600 font-medium">ID:</span>
                   <span className="font-mono font-bold text-gray-900 text-xs truncate">{device.deviceId}</span>
                 </div>
-                {/* Modelo del vehículo */}
                 {device.model && (
                   <div className="flex items-center gap-2 text-sm bg-gray-50 p-3 rounded-lg">
                     <Car size={16} className="text-gray-400 flex-shrink-0" />
@@ -258,7 +251,6 @@ const Devices = () => {
                     <span className="font-semibold text-gray-900 truncate">{device.model}</span>
                   </div>
                 )}
-                    {/* Placa */}
                 {device.licensePlate && (
                   <div className="flex items-center gap-2 text-sm bg-gray-50 p-3 rounded-lg">
                     <span className="text-gray-400 font-bold text-lg flex-shrink-0">🚗</span>
@@ -266,7 +258,6 @@ const Devices = () => {
                     <span className="font-bold text-gray-900">{device.licensePlate}</span>
                   </div>
                 )}
-                    {/* Fecha de registro */}
                 <div className="flex items-center gap-2 text-sm bg-gray-50 p-3 rounded-lg">
                   <Calendar size={16} className="text-gray-400 flex-shrink-0" />
                   <span className="text-gray-600 font-medium">Creado:</span>
@@ -281,7 +272,6 @@ const Devices = () => {
                   className="col-span-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2.5 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
                   title="Ver detalles"
                 >
-                    {/* Botón para ver detalles */}
                   <Info size={16} />
                   <span className="hidden sm:inline">Info</span>
                 </button>
@@ -290,7 +280,6 @@ const Devices = () => {
                   className="col-span-1 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium py-2.5 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
                   title="Editar"
                 >
-                    {/* Botón para editar */}
                   <Edit size={16} />
                   <span className="hidden sm:inline">Editar</span>
                 </button>
@@ -299,7 +288,6 @@ const Devices = () => {
                   className="col-span-1 bg-red-50 hover:bg-red-100 text-red-700 font-medium py-2.5 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
                   title="Eliminar"
                 >
-                    {/* Botón para eliminar */}
                   <Trash2 size={16} />
                   <span className="hidden sm:inline">Borrar</span>
                 </button>
@@ -350,14 +338,14 @@ const Devices = () => {
                 {editingDevice ? 'Actualiza la información del dispositivo' : 'Completa los datos del nuevo dispositivo'}
               </p>
             </div>
-                {/* Formulario para crear/editar dispositivo */}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
                   <p className="text-red-700 text-sm font-medium">{error}</p>
                 </div>
               )}
-                {/* Campos para crear/editar dispositivo */}
+
               {!editingDevice && (
                 <div>
                   <label htmlFor="deviceId" className="label">
@@ -377,7 +365,7 @@ const Devices = () => {
                   <p className="text-xs text-gray-500 mt-1">Identificador único del dispositivo</p>
                 </div>
               )}
-                {/* Campo para nombre del vehículo */}
+
               <div>
                 <label htmlFor="name" className="label">
                   Nombre del Vehículo <span className="text-red-500">*</span>
@@ -394,7 +382,7 @@ const Devices = () => {
                   disabled={submitting}
                 />
               </div>
-                {/* Campo para modelo del vehículo */}  
+
               <div>
                 <label htmlFor="model" className="label">
                   Modelo del Vehículo
@@ -410,7 +398,7 @@ const Devices = () => {
                   disabled={submitting}
                 />
               </div>
-                {/* Campo para placa */}
+
               <div>
                 <label htmlFor="licensePlate" className="label">
                   Placa
@@ -426,7 +414,7 @@ const Devices = () => {
                   disabled={submitting}
                 />
               </div>
-                {/* Botones de acción */}
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -478,7 +466,7 @@ const Devices = () => {
             >
               <X size={24} />
             </button>
-                {/* Vista de detalles del dispositivo */}
+
             <div className="flex items-center gap-4 mb-8">
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-lg">
                 <Car className="text-white" size={40} />
@@ -496,27 +484,27 @@ const Devices = () => {
                 </span>
               </div>
             </div>
-                    {/* ID del dispositivo */}
+
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-l-4 border-blue-500">
                 <p className="text-sm text-gray-600 font-medium mb-1">Device ID</p>
                 <p className="font-mono font-bold text-base text-gray-900">{selectedDevice.deviceId}</p>
               </div>
-                    {/* Modelo del vehículo */}
+
               {selectedDevice.model && (
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-600 font-medium mb-1">Modelo del Vehículo</p>
                   <p className="font-bold text-base text-gray-900">{selectedDevice.model}</p>
                 </div>
               )}
-                    {/* Placa */}
+
               {selectedDevice.licensePlate && (
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-600 font-medium mb-1">Placa</p>
                   <p className="font-bold text-xl text-gray-900">{selectedDevice.licensePlate}</p>
                 </div>
               )}
-                    {/* Fecha de registro */}
+
               <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm text-gray-600 font-medium mb-1">Fecha de Registro</p>
                 <p className="font-semibold text-base text-gray-900">
@@ -527,7 +515,7 @@ const Devices = () => {
                 </p>
               </div>
             </div>
-                    {/* Botón para cerrar modal */}
+
             <button
               onClick={() => setSelectedDevice(null)}
               className="w-full btn btn-primary mt-8"

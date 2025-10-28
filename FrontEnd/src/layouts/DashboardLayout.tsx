@@ -4,26 +4,25 @@ import { websocketService } from '../services/websocket.service';
 import { LogOut, LayoutDashboard, Car, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
-// Componente para mostrar el layout de la página de inicio
 const DashboardLayout = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    // Función para cerrar sesión
+
   const handleLogout = () => {
     websocketService.disconnect();
     logout();
     navigate('/login');
   };
-    // Verificar si la ruta actual es activa
+
   const isActive = (path: string) => location.pathname === path;
 
   const navLinks = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/devices', icon: Car, label: 'Dispositivos' },
   ];
-    // Vista de header
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
       {/* Header mejorado */}
@@ -91,7 +90,6 @@ const DashboardLayout = () => {
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                    {/* Icono */}
                   <Icon size={20} />
                   {link.label}
                   {isActive(link.path) && (
@@ -134,7 +132,6 @@ const DashboardLayout = () => {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {/* Icono */}
                     <Icon size={20} />
                     {link.label}
                   </Link>
@@ -160,7 +157,7 @@ const DashboardLayout = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-auto">
         <div className="container mx-auto px-4 lg:px-6 py-6 text-center text-sm text-gray-600">
-          <p>© 2025 IoT Fleet Monitoring System • Desarrollado con ❤️ por Juan</p>
+          <p>© 2025 IoT Fleet Monitoring System • Desarrollado con ❤️ por Simon Movilidad</p>
         </div>
       </footer>
     </div>

@@ -5,28 +5,27 @@ import { authService } from '../services/auth.service';
 import { websocketService } from '../services/websocket.service';
 import { LogIn, Loader2 } from 'lucide-react';
 
-// Página para iniciar sesión
 const Login = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-    // Datos del formulario
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-    // Función para iniciar sesión
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-        // Iniciar sesión
+
     try {
       const response = await authService.login({ email, password });
       setAuth(response.user, response.access_token);
       
       // Conectar WebSocket
       websocketService.connect(response.access_token);
-        // Navegar a la página de inicio
+      
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');
@@ -34,7 +33,7 @@ const Login = () => {
       setLoading(false);
     }
   };
-    // Mostrar formulario de inicio de sesión
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
@@ -42,14 +41,14 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-gray-900">IoT Fleet Monitoring</h1>
           <p className="text-gray-600 mt-2">Inicia sesión en tu cuenta</p>
         </div>
-            {/* Formulario de inicio de sesión */}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
-                {/* Campo para email */}
+
           <div>
             <label htmlFor="email" className="label">
               Email
@@ -65,7 +64,7 @@ const Login = () => {
               disabled={loading}
             />
           </div>
-                {/* Campo para contraseña */}
+
           <div>
             <label htmlFor="password" className="label">
               Contraseña
@@ -81,7 +80,7 @@ const Login = () => {
               disabled={loading}
             />
           </div>
-                {/* Botón para iniciar sesión */}
+
           <button
             type="submit"
             disabled={loading}
@@ -100,7 +99,7 @@ const Login = () => {
             )}
           </button>
         </form>
-            {/* Botón para registrarse */}
+
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             ¿No tienes cuenta?{' '}
@@ -109,7 +108,7 @@ const Login = () => {
             </Link>
           </p>
         </div>
-            
+
         {/* Credenciales de prueba */}
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-sm text-gray-600 mb-2">Credenciales de prueba:</p>

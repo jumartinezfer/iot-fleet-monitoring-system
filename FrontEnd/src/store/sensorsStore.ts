@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { SensorData, Alert } from '../type';
 
-// Estado de la aplicación
 interface SensorsState {
   sensorData: SensorData[];
   alerts: Alert[];
@@ -12,18 +11,18 @@ interface SensorsState {
   addAlert: (alert: Alert) => void;
   setLatestData: (data: SensorData) => void;
 }
-// Crear store de sensores
+
 export const useSensorsStore = create<SensorsState>((set) => ({
   sensorData: [],
   alerts: [],
   latestData: null,
   addSensorData: (data) => set((state) => ({ 
     sensorData: [data, ...state.sensorData].slice(0, 100) // Mantener últimos 100
-  })), // Actualizar datos de sensores
+  })),
   setSensorData: (data) => set({ sensorData: data }),
   setAlerts: (alerts) => set({ alerts }),
   addAlert: (alert) => set((state) => ({ 
     alerts: [alert, ...state.alerts].slice(0, 50) // Mantener últimas 50
-  })), // Actualizar datos de alertas
+  })),
   setLatestData: (data) => set({ latestData: data }),
 }));

@@ -8,7 +8,6 @@ interface MapViewProps {
   selectedDeviceId?: string;
 }
 
-// Vista de mapa
 const MapView = ({ data }: MapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -24,10 +23,10 @@ const MapView = ({ data }: MapViewProps) => {
       </div>
     );
   }
-  // Inicializar mapa
+
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
-    // Crear mapa
+
     try {
       map.current = new maplibregl.Map({
         container: mapContainer.current,
@@ -35,7 +34,7 @@ const MapView = ({ data }: MapViewProps) => {
         center: [-16.2546, 28.4682],
         zoom: 10,
       });
-      // Agregar controles de navegación
+
       map.current.addControl(
         new maplibregl.NavigationControl({
           showCompass: true,
@@ -43,7 +42,7 @@ const MapView = ({ data }: MapViewProps) => {
         }), 
         'top-right'
       );
-      // Agregar control de escala
+
       map.current.addControl(
         new maplibregl.ScaleControl({
           maxWidth: 100,
@@ -51,22 +50,22 @@ const MapView = ({ data }: MapViewProps) => {
         }),
         'bottom-left'
       );
-      // Evento de carga
+
       map.current.on('load', () => {
         setMapLoaded(true);
         setMapError(null);
       });
-      // Evento de error
+
       map.current.on('error', (e) => {
         console.error('MapLibre error:', e);
         setMapError('Error al cargar el mapa');
       });
-      // Evento de error
+
     } catch (error) {
       console.error('Error inicializando mapa:', error);
       setMapError('Error al inicializar el mapa');
     }
-    // Limpiar mapa al cerrar la vista
+
     return () => {
       if (map.current) {
         map.current.remove();
@@ -74,7 +73,7 @@ const MapView = ({ data }: MapViewProps) => {
       }
     };
   }, []);
-  // Actualizar mapa
+
   useEffect(() => {
     if (!map.current || !mapLoaded || !data || data.length === 0) return;
 
@@ -94,7 +93,7 @@ const MapView = ({ data }: MapViewProps) => {
         if (!item || typeof item.latitude !== 'number' || typeof item.longitude !== 'number') {
           return;
         }
-        // Crear elemento del marcador personalizado
+
         const el = document.createElement('div');
         el.style.cssText = `
           width: 40px;
@@ -110,12 +109,12 @@ const MapView = ({ data }: MapViewProps) => {
           font-size: 18px;
           transition: all 0.3s ease;
         `;
-            // Número del marcador (solo mostrar el más reciente)
+        
         if (index === 0) {
           el.innerHTML = '🚗';
           el.style.fontSize = '20px';
         }
-        // Contenido del popup
+
         const popupContent = `
           <div style="padding: 12px; font-family: system-ui; min-width: 220px;">
             <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
@@ -147,21 +146,21 @@ const MapView = ({ data }: MapViewProps) => {
             </div>
           </div>
         `;
-                // Crear popup
+
         const popup = new maplibregl.Popup({ 
           offset: 30,
           closeButton: true,
           closeOnClick: false,
           maxWidth: '300px'
         }).setHTML(popupContent);
-        // Crear y añadir marcador
+
         const marker = new maplibregl.Marker(el)
           .setLngLat([item.longitude, item.latitude])
           .setPopup(popup)
           .addTo(map.current!);
-        // Guardar marcador
+
         markersRef.current[item.id] = marker;
-        // Abrir popup automáticamente para el marcador más reciente
+
         if (index === 0) {
           setTimeout(() => marker.togglePopup(), 500);
         }
@@ -175,22 +174,20 @@ const MapView = ({ data }: MapViewProps) => {
             bounds.extend([item.longitude, item.latitude]);
           }
         });
-                // Ajustar vista
+        
         map.current.fitBounds(bounds, { 
           padding: 80,
           maxZoom: 14,
           duration: 1000
         });
       }
-      // Evento de error
     } catch (error) {
       console.error('Error actualizando marcadores:', error);
     }
   }, [data, mapLoaded]);
-  // Mostrar error si se produce algún error
+
   if (mapError) {
     return (
-        // Vista de error
       <div className="h-[500px] flex items-center justify-center bg-red-50 rounded-xl border-2 border-red-200">
         <div className="text-center p-6">
           <p className="text-red-600 font-semibold mb-2">⚠️ Error al cargar el mapa</p>
@@ -199,7 +196,7 @@ const MapView = ({ data }: MapViewProps) => {
       </div>
     );
   }
-  // Vista de mapa
+
   return (
     <div
       ref={mapContainer}
