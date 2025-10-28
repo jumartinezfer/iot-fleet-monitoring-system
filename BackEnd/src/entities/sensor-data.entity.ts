@@ -38,6 +38,8 @@ export class SensorData {
   timestamp: Date;
 
   // Relación: Muchos registros de sensores pertenecen a un dispositivo
-  @ManyToOne(() => Device, (device) => device.sensorData, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Device, (device) => device.sensorData, {
+    onDelete: 'CASCADE',
+  })
   device: Device;
 }

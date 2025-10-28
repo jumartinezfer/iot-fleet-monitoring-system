@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Device } from '../entities/device.entity';
-import { User } from '../entities/user.entity';
+import { User, UserRole } from '../entities/user.entity';
 import { CreateDeviceDto } from '../dto/create-device.dto';
 
 @Injectable()
@@ -35,7 +40,7 @@ export class DevicesService {
     if (user.role === 'admin') {
       return this.devicesRepository.find({ relations: ['user'] });
     }
-    
+
     return this.devicesRepository.find({
       where: { user: { id: user.id } },
     });
@@ -96,4 +101,50 @@ export class DevicesService {
       createdAt: device.createdAt,
     }));
   }
+
+  async update(id: string, updateData: Partial<CreateDeviceDto>, user: User): Promise<Device> {
+  const device = await this.devicesRepository.findOne({
+    where: { id },
+    relations: ['user'],
+  });
+
+  if (!device) {
+    throw new NotFoundException('Dispositivo no encontrado');
+  }
+
+  // Verificar permisos
+  if (user.role !== UserRole.ADMIN && device.user.id !== user.id) {
+    throw new ForbiddenException('No tienes permiso para actualizar este dispositivo');
+  }
+
+  // Actualizar campos
+  if (updateData.name) device.name = updateData.name;
+  if (updateData.model) device.model = updateData.model;
+  if (updateData.licensePlate) device.licensePlate = updateData.licensePlate;
+
+  return await this.devicesRepository.save(device);
 }
+
+async remove(id: string, user: User): Promise<void> {
+  const device = await this.devicesRepository.findOne({
+    where: { id },
+    relations: ['user'],
+  });
+
+  if (!device) {
+    throw new NotFoundException('Dispositivo no encontrado');
+  }
+
+  // Verificar permisos
+  if (user.role !== UserRole.ADMIN && device.user.id !== user.id) {
+    throw new ForbiddenException('No tienes permiso para eliminar este dispositivo');
+  }
+
+  // Marcar como inactivo en lugar de eliminar
+  device.isActive = false;
+  await this.devicesRepository.save(device);
+}
+
+}
+
+

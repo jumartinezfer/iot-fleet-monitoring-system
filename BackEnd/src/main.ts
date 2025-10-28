@@ -1,33 +1,83 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Habilitar CORS para permitir conexiones desde el frontend
+  // Habilitar CORS
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // URLs permitidas
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Habilitar validación global usando class-validator
+  // Habilitar validación global
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Elimina propiedades no definidas en el DTO
-      forbidNonWhitelisted: true, // Rechaza requests con propiedades extra
-      transform: true, // Transforma los payloads a instancias de DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
-  // Puerto del servidor
+  // Configuración de Swagger/OpenAPI
+  const config = new DocumentBuilder()
+    .setTitle('IoT Fleet Monitoring API')
+    .setDescription(
+      'API REST para sistema de monitoreo de flotas vehiculares con IoT. ' +
+        'Incluye autenticación JWT, ingesta de datos de sensores en tiempo real, ' +
+        'algoritmo predictivo de combustible y WebSockets para actualizaciones en vivo.',
+    )
+    .setVersion('1.0.0')
+    .setContact(
+      'Equipo de Desarrollo',
+      'https://github.com/jumartinezfer/iot-fleet-monitoring-system',
+      'jumartinezfer95@gmail.com',
+    )
+    .addTag('Auth', 'Endpoints de autenticación y gestión de usuarios')
+    .addTag('Devices', 'Gestión de dispositivos IoT')
+    .addTag('Sensors', 'Ingesta y consulta de datos de sensores')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Ingrese su token JWT',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config, {
+    deepScanRoutes: true,
+  });
+
+  // Configurar la interfaz de Swagger UI
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'IoT Fleet API Docs',
+    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+    customCss: '.swagger-ui .topbar { display: none }',
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'none',
+      filter: true,
+      showRequestDuration: true,
+    },
+  });
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
   console.log(`\n🚀 Backend server running on: http://localhost:${port}`);
   console.log(`📡 WebSocket server available at: ws://localhost:${port}`);
+  console.log(
+    `📚 Swagger API Documentation: http://localhost:${port}/api/docs`,
+  );
   console.log(`\n📋 Available endpoints:`);
   console.log(`   - POST   /auth/register`);
   console.log(`   - POST   /auth/login`);

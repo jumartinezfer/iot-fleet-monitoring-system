@@ -16,7 +16,8 @@ export class JwtService {
 
   constructor(private configService: ConfigService) {
     // Obtener el secret con valor por defecto si no existe
-    this.secret = this.configService.get<string>('JWT_SECRET') ||
+    this.secret =
+      this.configService.get<string>('JWT_SECRET') ||
       // Si no existe, usar un secret predeterminado
       'default_secret_key_change_in_production';
   }

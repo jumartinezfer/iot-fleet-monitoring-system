@@ -6,10 +6,7 @@ import { Device } from '../entities/device.entity';
 import { AuthModule } from '../auth/auth.module'; // ← Añadir esta importación
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Device]),
-    AuthModule, 
-  ],
+  imports: [TypeOrmModule.forFeature([Device]), AuthModule],
   providers: [DevicesService],
   controllers: [DevicesController],
   exports: [DevicesService],
