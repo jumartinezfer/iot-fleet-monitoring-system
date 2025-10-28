@@ -14,7 +14,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
   ) {}
-
+  // Registro y inicio de sesión
   async register(registerDto: RegisterDto) {
     const { email, password, name, role } = registerDto;
 
@@ -27,7 +27,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
     });
-
+    // Devolver token y usuario
     return {
       access_token: token,
       user: {
@@ -38,9 +38,9 @@ export class AuthService {
       },
     };
   }
-
+  // Login
   async login(loginDto: LoginDto) {
-    const { email, password } = loginDto;
+    const { email, password } = loginDto; // valida el email y la contraseña
 
     // Buscar usuario
     const user = await this.usersService.findByEmail(email);
@@ -58,12 +58,12 @@ export class AuthService {
     }
 
     // Generar token JWT
-    const token = this.jwtService.sign({
+    const token = this.jwtService.sign({ // firma el token
       userId: user.id,
       email: user.email,
       role: user.role,
     });
-
+    // Devolver token y usuario
     return {
       access_token: token,
       user: {
@@ -74,16 +74,17 @@ export class AuthService {
       },
     };
   }
-
+  // Validar token
   async validateToken(token: string) {
     try {
+      // crea el payload y verificar el token
       const payload = this.jwtService.verify(token);
       const user = await this.usersService.findById(payload.userId);
-
+      // Verificar que el usuario esté activo
       if (!user || !user.isActive) {
         throw new UnauthorizedException('Usuario no válido');
       }
-
+      // Si el usuario está activo, devolver el usuario
       return user;
     } catch (error) {
       throw new UnauthorizedException('Token inválido o expirado');

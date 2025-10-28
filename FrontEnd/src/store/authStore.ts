@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type  { User } from '../types';
-
+import type { User } from '../type';
+// Interface para el store de autenticación
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -9,7 +9,7 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   logout: () => void;
 }
-
+// Crear store de autenticación
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -17,11 +17,14 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       setAuth: (user, token) => {
-        localStorage.setItem('access_token', token);
+        // Guardar token en localStorage
+        localStorage.setItem('token', token); //Cambio de 'access_token' a 'token'
         set({ user, token, isAuthenticated: true });
+        console.log('Token guardado correctamente');
       },
       logout: () => {
-        localStorage.removeItem('access_token');
+        // Cerrar sesión
+        localStorage.removeItem('token'); //Cambio de 'access_token' a 'token'
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),

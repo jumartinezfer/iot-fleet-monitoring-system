@@ -8,22 +8,48 @@ import { websocketService } from '../services/websocket.service';
 import MapView from '../components/map/MapView';
 import SensorChart from '../components/dashboard/SensorChart';
 import { AlertTriangle, Activity, Thermometer, Fuel, Loader2, TrendingUp, Navigation } from 'lucide-react';
-
+import type { Alert } from '../type';
+// Página principal del dashboard
 const Dashboard = () => {
   const { user } = useAuthStore();
   const { devices, setDevices } = useDevicesStore();
-  const { sensorData, alerts, addSensorData, addAlert, setAlerts, setSensorData } = useSensorsStore();
+  const { sensorData, alerts, addSensorData, addAlert, setAlerts, setSensorData, getMapData } = useSensorsStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
+  // Inicializar datos del dashboard
   useEffect(() => {
     if (!user) {
       console.warn('Usuario no encontrado, redirigiendo al login');
       window.location.href = '/login';
       return;
     }
-    loadData();
-    setupWebSocket();
+    // Cargar datos del dashboard
+    const initialize = async () => {
+      await loadData();
+
+      // Conectar WebSocket con el token del usuario
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log('🔐 Token encontrado, conectando WebSocket...');
+        websocketService.connect(token);
+
+        // Esperar un momento a que se conecte
+        setTimeout(() => {
+          setupWebSocket();
+        }, 500);
+      } else {
+        
+        console.error('No hay token disponible para WebSocket');
+      }
+    };
+
+    initialize();
+
+    // Cleanup: desconectar al salir
+    return () => {
+      console.log('🔌 Limpiando conexión WebSocket...');
+      websocketService.disconnect();
+    };
   }, [user]);
 
   const loadData = async () => {
@@ -31,22 +57,28 @@ const Dashboard = () => {
       setLoading(true);
       setError('');
       console.log('🔄 Cargando datos del dashboard...');
-      
-      const devicesData = await devicesService.getAll();
-      console.log('✅ Dispositivos cargados:', devicesData);
-      setDevices(devicesData || []);
 
+      // Verificar si hay datos persistidos en el store
+      if (sensorData.length > 0) {
+        console.log('Datos recuperados del store persistido:', sensorData.length, 'items');
+      }
+      // Obtener datos de dispositivos
+      const devicesData = await devicesService.getAll();
+      console.log('Dispositivos cargados:', devicesData);
+      setDevices(devicesData || []);
+      // Obtener datos de sensores
       if (devicesData && devicesData.length > 0) {
         try {
           const latestData = await sensorsService.getLatestData(
             devicesData[0].deviceId,
             20
           );
-          console.log('✅ Datos de sensores recibidos:', latestData);
-
-          if (latestData && Array.isArray(latestData)) {
-            const parsedData = latestData.map(item => ({
+          console.log('Datos de sensores recibidos:', latestData);
+          // Si hay datos, procesarlos
+          if (latestData && Array.isArray(latestData) && latestData.length > 0) {
+            const parsedData = latestData.map((item) => ({
               ...item,
+              deviceId: item.deviceId || devicesData[0].deviceId,
               latitude: Number(item.latitude) || 0,
               longitude: Number(item.longitude) || 0,
               fuelLevel: Number(item.fuelLevel) || 0,
@@ -54,25 +86,24 @@ const Dashboard = () => {
               speed: Number(item.speed) || 0,
               fuelConsumptionRate: Number(item.fuelConsumptionRate) || 0,
             }));
-
             setSensorData(parsedData);
           }
         } catch (sensorErr: any) {
-          console.log('⚠️ No hay datos de sensores:', sensorErr.message);
+          console.log('No hay datos de sensores:', sensorErr.message);
         }
       }
-
+      // Obtener alertas
       if (user?.role === 'admin') {
         try {
           const alertsData = await sensorsService.getActiveAlerts();
-          console.log('✅ Alertas cargadas:', alertsData);
+          console.log('Alertas cargadas:', alertsData);
           setAlerts(alertsData || []);
         } catch (alertErr: any) {
           console.log('⚠️ No hay alertas:', alertErr.message);
         }
       }
-
-      console.log('✅ Dashboard cargado exitosamente');
+      // Mostrar mensaje de cargado
+      console.log('Dashboard cargado exitosamente');
     } catch (err: any) {
       console.error('❌ Error al cargar dashboard:', err);
       setError(err.response?.data?.message || err.message || 'Error al cargar datos');
@@ -83,268 +114,273 @@ const Dashboard = () => {
 
   const setupWebSocket = () => {
     try {
-      console.log('🌐 Configurando WebSocket...');
-      
+      console.log('🌐 Configurando listeners de WebSocket...');
+
+      // Verificar que esté conectado
+      if (!websocketService.isConnected()) {
+        console.warn('⚠️ WebSocket aún no está conectado. Reintentando en 1s...');
+        setTimeout(setupWebSocket, 1000);
+        return;
+      }
+
+      console.log('WebSocket conectado, configurando listeners...');
+
+      // Manejar datos de sensores en tiempo real
       websocketService.onSensorData((data) => {
-        console.log('📡 WebSocket - Nueva data:', data);
-        const parsedData = {
+        console.log('📡 WebSocket - Nueva data recibida:', data);
+
+        // Crear objeto completo con deviceId
+        const sensorDataWithDevice = {
           ...data,
+          deviceId: data.deviceId,
           latitude: Number(data.latitude),
           longitude: Number(data.longitude),
           fuelLevel: Number(data.fuelLevel),
           temperature: Number(data.temperature),
           speed: Number(data.speed),
           fuelConsumptionRate: Number(data.fuelConsumptionRate),
+          timestamp: new Date(data.timestamp || Date.now()),
         };
-        addSensorData(parsedData as any);
+
+        // Agregar al store (crea nuevo array, no muta)
+        addSensorData(sensorDataWithDevice as any);
+
+        console.log('Datos agregados al store');
       });
 
+      // Manejar alertas (solo para admins)
       if (user?.role === 'admin') {
         websocketService.onAlert((alert) => {
-          console.log('🚨 WebSocket - Nueva alerta:', alert);
-          addAlert(alert);
+          console.log('WebSocket - Nueva alerta:', alert);
+
+          // También agregar al store de sensorData para actualizar el mapa
+          const sensorDataFromAlert = {
+            deviceId: alert.deviceId,
+            latitude: Number(alert.latitude),
+            longitude: Number(alert.longitude),
+            fuelLevel: Number(alert.fuelLevel),
+            temperature: 0,
+            speed: 0,
+            fuelConsumptionRate: 0,
+            alert: alert.message,
+            timestamp: new Date(alert.timestamp || Date.now()),
+          };
+          // Agregar datos de sensores al store
+          addSensorData(sensorDataFromAlert as any);
+          console.log('Datos de alerta agregados al mapa');
+
+          // También agregar a la lista de alertas
+          addAlert({
+            ...alert,
+            deviceId: alert.deviceId,
+          });
         });
       }
     } catch (err) {
-      console.error('❌ Error configurando WebSocket:', err);
+      console.error('Error configurando WebSocket:', err);
     }
   };
-
+  // Si se está cargando, mostrar mensaje de cargando
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center bg-white rounded-2xl shadow-xl p-12">
-          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={56} />
-          <p className="text-lg font-semibold text-gray-700">Cargando dashboard...</p>
-          <p className="text-sm text-gray-500 mt-2">Por favor espera</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
+        <p className="text-gray-600 text-lg">Cargando dashboard...</p>
+        <p className="text-gray-400 text-sm mt-2">Por favor espera</p>
       </div>
     );
   }
-
+  // Si hay un error, mostrar mensaje de error
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-6 shadow-lg">
-          <div className="flex items-center mb-4">
-            <AlertTriangle className="text-red-600 mr-3" size={28} />
-            <h3 className="text-xl font-bold text-red-900">Error al cargar el dashboard</h3>
-          </div>
-          <p className="text-red-700 mb-4">{error}</p>
-          <button onClick={loadData} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition">
-            🔄 Reintentar
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+        <p className="text-red-600 text-lg font-semibold mb-2">Error al cargar el dashboard</p>
+        <p className="text-gray-600">{error}</p>
       </div>
     );
   }
 
-  const latestSensorData = sensorData && sensorData.length > 0 ? sensorData[0] : null;
-
+  // Obtener datos para el mapa (solo último por dispositivo)
+  const mapData = getMapData();
+  // Obtener datos más recientes
+  const latestSensorData = sensorData[0] || {
+    fuelLevel: 0,
+    temperature: 0,
+    speed: 0,
+    timestamp: new Date(),
+  };
+  // Mostrar dashboard
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 rounded-2xl shadow-2xl p-6 lg:p-8 text-white">
-        <h2 className="text-2xl lg:text-4xl font-bold mb-2">📊 Dashboard de Monitoreo IoT</h2>
-        <p className="text-blue-100 text-sm lg:text-base">
-          Bienvenido, <span className="font-semibold">{user?.name}</span>! • 
-          <span className="bg-white/20 px-3 py-1 rounded-full ml-2">
-            {user?.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
-          </span>
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
+        <h1 className="text-3xl font-bold mb-2">Dashboard IoT</h1>
+        <p className="text-blue-100">
+          Bienvenido, {user?.name}! • {user?.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium uppercase">Dispositivos</p>
-              <p className="text-4xl font-bold text-gray-900 mt-2">{devices?.length || 0}</p>
+              <p className="text-gray-500 text-sm">Dispositivos</p>
+              <p className="text-3xl font-bold text-gray-800">{devices?.length || 0}</p>
             </div>
-            <div className="bg-blue-100 p-3 rounded-xl">
-              <Activity className="text-blue-600" size={32} />
-            </div>
+            <Navigation className="w-12 h-12 text-blue-500" />
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 hover:shadow-xl transition">
+        {/* Alertas Panel (Admin) */}
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium uppercase">Alertas</p>
-              <p className="text-4xl font-bold text-gray-900 mt-2">{alerts?.length || 0}</p>
+              <p className="text-gray-500 text-sm">Alertas</p>
+              <p className="text-3xl font-bold text-gray-800">{alerts?.length || 0}</p>
             </div>
-            <div className="bg-red-100 p-3 rounded-xl">
-              <AlertTriangle className="text-red-600" size={32} />
-            </div>
+            <AlertTriangle className="w-12 h-12 text-red-500" />
           </div>
         </div>
-
-        {latestSensorData && (
-          <>
-            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium uppercase">Combustible</p>
-                  <p className="text-4xl font-bold text-gray-900 mt-2">
-                    {latestSensorData.fuelLevel.toFixed(1)} <span className="text-lg text-gray-500">L</span>
-                  </p>
-                </div>
-                <div className="bg-green-100 p-3 rounded-xl">
-                  <Fuel className="text-green-600" size={32} />
-                </div>
-              </div>
+        {/* Datos de sensores Panel (Admin) */}
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Combustible</p>
+              <p className="text-3xl font-bold text-gray-800">{latestSensorData.fuelLevel.toFixed(1)} L</p>
             </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium uppercase">Temperatura</p>
-                  <p className="text-4xl font-bold text-gray-900 mt-2">
-                    {latestSensorData.temperature.toFixed(1)} <span className="text-lg text-gray-500">°C</span>
-                  </p>
-                </div>
-                <div className="bg-orange-100 p-3 rounded-xl">
-                  <Thermometer className="text-orange-600" size={32} />
-                </div>
-              </div>
+            <Fuel className="w-12 h-12 text-yellow-500" />
+          </div>
+        </div>
+        {/* Temperatura Panel (Admin) */}
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Temperatura</p>
+              <p className="text-3xl font-bold text-gray-800">{latestSensorData.temperature.toFixed(1)} °C</p>
             </div>
-          </>
-        )}
+            <Thermometer className="w-12 h-12 text-orange-500" />
+          </div>
+        </div>
       </div>
 
-      {/* Mapa y Gráficos */}
-      {sensorData && sensorData.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Mapa - 2 columnas */}
-          <div className="xl:col-span-2">
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <Navigation size={24} className="text-blue-600" />
-                  Ubicación en Tiempo Real
-                </h3>
-                <span className="bg-green-100 text-green-800 text-xs font-bold px-4 py-2 rounded-full inline-flex items-center gap-2 w-fit">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  En vivo
-                </span>
-              </div>
-              <MapView data={sensorData} />
-            </div>
-          </div>
-
-          {/* Gráficos - 1 columna */}
-          <div className="xl:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl p-6 h-full">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp size={24} className="text-blue-600" />
-                Tendencias
-              </h3>
-              <SensorChart data={sensorData} />
-            </div>
+      {/* Mapa y Data */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Mapa */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Navigation className="w-6 h-6 text-blue-500" />
+            Mapa en Tiempo Real
+            <span className="text-sm font-normal text-gray-500 ml-2">
+              ({mapData.length} {mapData.length === 1 ? 'dispositivo' : 'dispositivos'})
+            </span>
+          </h2>
+          <div className="h-96">
+            <MapView data={mapData} />
           </div>
         </div>
-      )}
 
-      {/* Tabla de datos */}
-      {sensorData && sensorData.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-            <h3 className="text-xl font-bold text-gray-900">📊 Últimos Registros</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Hora</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Combustible</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Temperatura</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Velocidad</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sensorData.slice(0, 8).map((data, index) => (
-                  <tr key={data.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {new Date(data.timestamp).toLocaleTimeString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="font-bold text-green-600">{data.fuelLevel.toFixed(1)}</span>
-                      <span className="text-gray-500 ml-1">L</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="font-bold text-orange-600">{data.temperature.toFixed(1)}</span>
-                      <span className="text-gray-500 ml-1">°C</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="font-bold text-blue-600">{data.speed.toFixed(0)}</span>
-                      <span className="text-gray-500 ml-1">km/h</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      {data.alert ? (
-                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
-                          ⚠️ Alerta
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
-                          ✅ Normal
-                        </span>
-                      )}
-                    </td>
+        {/* tabla de data reciente */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Activity className="w-6 h-6 text-green-500" />
+            Datos Recientes
+            <span className="text-sm font-normal text-gray-500 ml-2">
+              ({sensorData.length} registros)
+            </span>
+          </h2>
+          <div className="overflow-auto max-h-96">
+            {sensorData.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    <th className="p-2 text-left">Hora</th>
+                    <th className="p-2 text-left">Combustible</th>
+                    <th className="p-2 text-left">Temperatura</th>
+                    <th className="p-2 text-left">Velocidad</th>
+                    <th className="p-2 text-left">Estado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sensorData.slice(0, 20).map((data, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="p-2">{new Date(data.timestamp).toLocaleTimeString()}</td>
+                      <td className="p-2">{data.fuelLevel.toFixed(1)} L</td>
+                      <td className="p-2">{data.temperature.toFixed(1)} °C</td>
+                      <td className="p-2">{data.speed.toFixed(0)} km/h</td>
+                      <td className="p-2">
+                        {data.alert ? (
+                          <span className="text-red-500 font-semibold">⚠️ Alerta</span>
+                        ) : (
+                          <span className="text-green-500">✅ Normal</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No hay datos registrados</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Alertas Admin */}
+      {/* graficas */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-purple-500" />
+          Gráficas Históricas
+        </h2>
+        <SensorChart data={sensorData} />
+      </div>
+
+      {/* Alertas del panel (Admin) */}
       {user?.role === 'admin' && alerts && alerts.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl border-l-4 border-red-500 overflow-hidden">
-          <div className="px-6 py-5 bg-red-50 border-b">
-            <h3 className="text-xl font-bold text-red-900 flex items-center gap-2">
-              <AlertTriangle size={24} />
-              Alertas Recientes (Administrador)
-            </h3>
-          </div>
-          <div className="p-6 space-y-4">
-            {alerts.slice(0, 5).map((alert) => (
-              <div key={alert.id} className="flex items-start gap-4 p-5 bg-red-50 border-l-4 border-red-500 rounded-lg hover:shadow-md transition">
-                <div className="bg-red-100 p-3 rounded-full flex-shrink-0">
-                  <AlertTriangle className="text-red-600" size={24} />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-red-900 text-lg">{alert.message}</p>
-                  <p className="text-sm text-red-700 mt-2">
-                    <span className="font-semibold">Device:</span> {alert.deviceId} • 
-                    <span className="font-semibold"> Combustible:</span> {Number(alert.fuelLevel).toFixed(1)} L
-                  </p>
-                  <p className="text-xs text-red-600 mt-2">
-                    📅 {new Date(alert.timestamp).toLocaleString()}
-                  </p>
-                </div>
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-600">
+            <AlertTriangle className="w-6 h-6" />
+            Alertas Activas
+            <span className="text-sm font-normal text-gray-500 ml-2">
+              ({alerts.length})
+            </span>
+          </h2>
+          <div className="space-y-3">
+            {alerts.slice(0, 10).map((alert, index) => (
+              <div key={index} className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <p className="font-semibold text-red-800">{alert.message}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Device: {alert.deviceId} • Combustible: {Number(alert.fuelLevel).toFixed(1)} L
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  📅 {new Date(alert.timestamp).toLocaleString()}
+                </p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Sin datos */}
-      {(!sensorData || sensorData.length === 0) && (
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-xl p-12 text-center border-2 border-dashed border-purple-300">
-          <Activity className="mx-auto text-purple-600 mb-6" size={72} />
-          <h3 className="text-3xl font-bold text-gray-900 mb-3">Sin datos de sensores</h3>
-          <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
-            {devices && devices.length > 0 
+      {/* estado vacio para no mostrar datos */}
+      {sensorData.length === 0 && (
+        <div className="bg-gray-50 p-12 rounded-lg text-center border-2 border-dashed border-gray-300">
+          <Activity className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay datos disponibles</h3>
+          <p className="text-gray-500 mb-4">
+            {devices && devices.length > 0
               ? 'Envía datos desde tus dispositivos IoT para ver información en tiempo real'
               : 'Primero crea un dispositivo IoT'}
           </p>
           {(!devices || devices.length === 0) && (
-            <a href="/devices" className="inline-block px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition text-lg">
+            <button 
+              onClick={() => window.location.href = '/devices'}
+              className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
               🚗 Crear Primer Dispositivo
-            </a>
+            </button>
           )}
         </div>
       )}

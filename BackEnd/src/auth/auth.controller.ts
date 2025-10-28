@@ -17,7 +17,7 @@ import { User } from '../entities/user.entity';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
-
+  // Registro y inicio de sesión
   @Post('register')
   @ApiOperation({ summary: 'Registrar nuevo usuario' })
   @ApiBody({ type: RegisterDto })
@@ -26,7 +26,7 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
-
+  // Login
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesión' })
   @ApiBody({ type: LoginDto })
@@ -38,7 +38,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
-
+  // Validar token
   @Get('profile')
   @UseGuards(AuthGuard)
   @ApiBearerAuth('JWT-auth')

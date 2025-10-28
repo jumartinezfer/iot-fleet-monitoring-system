@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useDevicesStore } from '../store/devicesStore';
 import { devicesService } from '../services/devices.service';
 import { Plus, Car, Calendar, Hash, Loader2, Edit, Trash2, X, Check, Info } from 'lucide-react';
-import type { Device } from '../types.ts';
-
+import type { Device } from '../type.ts';
+// Página para gestionar dispositivos
 const Devices = () => {
   const { devices, setDevices, addDevice } = useDevicesStore();
   const [loading, setLoading] = useState(true);
@@ -18,11 +18,11 @@ const Devices = () => {
     licensePlate: '',
   });
   const [submitting, setSubmitting] = useState(false);
-
+  // Cargar datos de dispositivos
   useEffect(() => {
     loadDevices();
   }, []);
-
+  // Función para cargar datos de dispositivos
   const loadDevices = async () => {
     try {
       setLoading(true);
@@ -34,45 +34,45 @@ const Devices = () => {
       setLoading(false);
     }
   };
-
+  // Función para actualizar datos del dispositivo
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
-
+  // Función para enviar datos del dispositivo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError('');
-
+    // Enviar datos del dispositivo
     try {
       if (editingDevice) {
         const response = await fetch(`http://localhost:3000/devices/${editingDevice.id}`, {
           method: 'PATCH',
-          headers: {
+          headers: { // Cabeceras de petición para autenticación
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`, // Obtener token de autenticación
           },
-          body: JSON.stringify({
+          body: JSON.stringify({ // Datos a enviar
             name: formData.name,
             model: formData.model,
             licensePlate: formData.licensePlate,
           }),
         });
-
+        // verificar respuesta
         if (!response.ok) throw new Error('Error al actualizar dispositivo');
-        
+          // Cargar datos de dispositivos
         await loadDevices();
         setShowModal(false);
         setEditingDevice(null);
       } else {
-        const newDevice = await devicesService.create(formData);
+        const newDevice = await devicesService.create(formData); // Crear nuevo dispositivo
         addDevice(newDevice);
         setShowModal(false);
       }
-      
+      // Limpiar formulario
       setFormData({ deviceId: '', name: '', model: '', licensePlate: '' });
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Error al guardar dispositivo');
@@ -80,7 +80,7 @@ const Devices = () => {
       setSubmitting(false);
     }
   };
-
+  // Función para editar dispositivo
   const handleEdit = (device: Device) => {
     setEditingDevice(device);
     setFormData({
@@ -91,12 +91,12 @@ const Devices = () => {
     });
     setShowModal(true);
   };
-
+  // Función para eliminar dispositivo
   const handleDelete = async (device: Device) => {
     if (!window.confirm(`¿Estás seguro de eliminar el dispositivo "${device.name}"?`)) {
       return;
     }
-
+    // Eliminar dispositivo
     try {
       const response = await fetch(`http://localhost:3000/devices/${device.id}`, {
         method: 'DELETE',
@@ -104,21 +104,21 @@ const Devices = () => {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-
+      // Verificar respuesta
       if (!response.ok) throw new Error('Error al eliminar dispositivo');
-      
+        // Cargar datos de dispositivos
       await loadDevices();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar dispositivo');
     }
   };
-
+  // Función para abrir el modal de creación de nuevo dispositivo
   const openNewModal = () => {
     setEditingDevice(null);
-    setFormData({ deviceId: '', name: '', model: '', licensePlate: '' });
+    setFormData({ deviceId: '', name: '', model: '', licensePlate: '' }); // Limpiar formulario
     setShowModal(true);
   };
-
+  // Mostrar panel de dispositivos
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
@@ -130,7 +130,7 @@ const Devices = () => {
       </div>
     );
   }
-
+  // Mostrar panel de dispositivos
   return (
     <div className="space-y-6 lg:space-y-8 fade-in">
       {/* Header con gradiente */}
@@ -326,7 +326,7 @@ const Devices = () => {
             >
               <X size={24} />
             </button>
-
+            {/* Contenido del modal */}
             <div className="mb-6">
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
                 {editingDevice ? <Edit className="text-white" size={24} /> : <Plus className="text-white" size={24} />}
@@ -338,14 +338,14 @@ const Devices = () => {
                 {editingDevice ? 'Actualiza la información del dispositivo' : 'Completa los datos del nuevo dispositivo'}
               </p>
             </div>
-
+            {/* Formulario para actualizar datos del dispositivo */}
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
                   <p className="text-red-700 text-sm font-medium">{error}</p>
                 </div>
               )}
-
+              {/* Campos para actualizar datos del dispositivo */}
               {!editingDevice && (
                 <div>
                   <label htmlFor="deviceId" className="label">
@@ -365,7 +365,7 @@ const Devices = () => {
                   <p className="text-xs text-gray-500 mt-1">Identificador único del dispositivo</p>
                 </div>
               )}
-
+              {/* Campos para actualizar datos del dispositivo */}
               <div>
                 <label htmlFor="name" className="label">
                   Nombre del Vehículo <span className="text-red-500">*</span>
@@ -382,7 +382,7 @@ const Devices = () => {
                   disabled={submitting}
                 />
               </div>
-
+                {/* Campos para actualizar datos del dispositivo */}
               <div>
                 <label htmlFor="model" className="label">
                   Modelo del Vehículo
@@ -398,7 +398,7 @@ const Devices = () => {
                   disabled={submitting}
                 />
               </div>
-
+                {/* Campos para actualizar datos del dispositivo */}
               <div>
                 <label htmlFor="licensePlate" className="label">
                   Placa
@@ -414,7 +414,7 @@ const Devices = () => {
                   disabled={submitting}
                 />
               </div>
-
+                {/* Campos para actualizar datos del dispositivo */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -466,7 +466,7 @@ const Devices = () => {
             >
               <X size={24} />
             </button>
-
+            {/* Contenido del modal */}
             <div className="flex items-center gap-4 mb-8">
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-lg">
                 <Car className="text-white" size={40} />
@@ -484,7 +484,7 @@ const Devices = () => {
                 </span>
               </div>
             </div>
-
+                  {/* Campos para actualizar datos del dispositivo */}
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-l-4 border-blue-500">
                 <p className="text-sm text-gray-600 font-medium mb-1">Device ID</p>
@@ -515,7 +515,7 @@ const Devices = () => {
                 </p>
               </div>
             </div>
-
+                    {/* Botón para cerrar el modal */}
             <button
               onClick={() => setSelectedDevice(null)}
               className="w-full btn btn-primary mt-8"

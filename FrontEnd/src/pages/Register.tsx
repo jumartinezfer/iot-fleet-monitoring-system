@@ -4,11 +4,11 @@ import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/auth.service';
 import { websocketService } from '../services/websocket.service';
 import { UserPlus, Loader2 } from 'lucide-react';
-
+// Página para registrarse
 const Register = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  
+    // Establecer autenticación
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,26 +16,26 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  // Registrarse
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
-
+  // Función para registrarse
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+    // Registrarse
     try {
       const response = await authService.register(formData);
       setAuth(response.user, response.access_token);
       
       // Conectar WebSocket
       websocketService.connect(response.access_token);
-      
+      // Esperar un momento a que se conecte
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al registrarse');
@@ -43,7 +43,7 @@ const Register = () => {
       setLoading(false);
     }
   };
-
+  // Mostrar página de registro
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
@@ -51,7 +51,7 @@ const Register = () => {
           <h1 className="text-3xl font-bold text-gray-900">Crear Cuenta</h1>
           <p className="text-gray-600 mt-2">Regístrate en IoT Fleet Monitoring</p>
         </div>
-
+        {/* Formulario de registro */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -75,7 +75,7 @@ const Register = () => {
               disabled={loading}
             />
           </div>
-
+            {/* Campos para registrarse */}
           <div>
             <label htmlFor="email" className="label">
               Email
@@ -92,7 +92,7 @@ const Register = () => {
               disabled={loading}
             />
           </div>
-
+            {/* Campos para registrarse */}
           <div>
             <label htmlFor="password" className="label">
               Contraseña
@@ -111,7 +111,7 @@ const Register = () => {
             />
             <p className="text-sm text-gray-500 mt-1">Mínimo 6 caracteres</p>
           </div>
-
+            {/* Campos para registrarse */}
           <button
             type="submit"
             disabled={loading}
@@ -130,7 +130,7 @@ const Register = () => {
             )}
           </button>
         </form>
-
+              {/* Botón para cerrar sesión */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             ¿Ya tienes cuenta?{' '}

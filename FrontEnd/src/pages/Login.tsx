@@ -4,28 +4,28 @@ import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/auth.service';
 import { websocketService } from '../services/websocket.service';
 import { LogIn, Loader2 } from 'lucide-react';
-
+  // Página de inicio de sesión
 const Login = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  
+    // Establecer autenticación
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  // Iniciar sesión
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+    // Iniciar sesión
     try {
       const response = await authService.login({ email, password });
       setAuth(response.user, response.access_token);
       
       // Conectar WebSocket
       websocketService.connect(response.access_token);
-      
+        // Esperar un momento a que se conecte
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');
@@ -33,7 +33,7 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  // Mostrar página de inicio de sesión
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
@@ -41,14 +41,14 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-gray-900">IoT Fleet Monitoring</h1>
           <p className="text-gray-600 mt-2">Inicia sesión en tu cuenta</p>
         </div>
-
+        {/* Formulario de inicio de sesión */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
-
+          {/* Campos de inicio de sesión */}
           <div>
             <label htmlFor="email" className="label">
               Email
@@ -64,7 +64,7 @@ const Login = () => {
               disabled={loading}
             />
           </div>
-
+            {/* Campos de inicio de sesión */}
           <div>
             <label htmlFor="password" className="label">
               Contraseña
@@ -80,7 +80,7 @@ const Login = () => {
               disabled={loading}
             />
           </div>
-
+            {/* Botón de inicio de sesión */}
           <button
             type="submit"
             disabled={loading}
@@ -99,7 +99,7 @@ const Login = () => {
             )}
           </button>
         </form>
-
+              {/* Botón para cerrar sesión */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             ¿No tienes cuenta?{' '}

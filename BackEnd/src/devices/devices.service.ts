@@ -82,10 +82,7 @@ export class DevicesService {
     });
   }
 
-  /**
-   * Enmascara el deviceId para usuarios no-admin
-   * Ejemplo: DEV-ABCD-1234 -> DEV-****-1234
-   */
+  // Enmascara el deviceId para usuarios no-admin
   maskDeviceId(deviceId: string, isAdmin: boolean): string {
     if (isAdmin) {
       return deviceId;

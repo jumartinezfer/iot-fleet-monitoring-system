@@ -123,7 +123,7 @@ export class SensorsController {
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-
+    // Obtener datos históricos
     const data = await this.sensorsService.getHistoricalData(
       deviceId,
       start,

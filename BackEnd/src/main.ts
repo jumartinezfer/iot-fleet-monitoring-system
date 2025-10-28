@@ -72,7 +72,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  // Mostrar mensajes de inicio
+  // Mostrar mensajes de inicio en la consola
   console.log(`\n🚀 Backend server running on: http://localhost:${port}`);
   console.log(`📡 WebSocket server available at: ws://localhost:${port}`);
   console.log(

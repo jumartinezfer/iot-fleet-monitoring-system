@@ -3,13 +3,13 @@ import { useAuthStore } from '../store/authStore';
 import { websocketService } from '../services/websocket.service';
 import { LogOut, LayoutDashboard, Car, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-
+// Layout para el dashboard
 const DashboardLayout = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  // Función para cerrar sesión
   const handleLogout = () => {
     websocketService.disconnect();
     logout();
@@ -17,12 +17,12 @@ const DashboardLayout = () => {
   };
 
   const isActive = (path: string) => location.pathname === path;
-
+  // Lista de enlaces de navegación
   const navLinks = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/devices', icon: Car, label: 'Dispositivos' },
   ];
-
+  // Mostrar header
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
       {/* Header mejorado */}
@@ -157,7 +157,7 @@ const DashboardLayout = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-auto">
         <div className="container mx-auto px-4 lg:px-6 py-6 text-center text-sm text-gray-600">
-          <p>© 2025 IoT Fleet Monitoring System • Desarrollado con ❤️ por Simon Movilidad</p>
+          <p>© 2025 IoT Fleet Monitoring System • Desarrollado con ❤️ por Juan</p>
         </div>
       </footer>
     </div>

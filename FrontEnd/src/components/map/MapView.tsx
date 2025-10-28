@@ -7,9 +7,9 @@ interface MapViewProps {
   data: SensorData[];
   selectedDeviceId?: string;
 }
-
+// Componente para visualizar mapa de datos de sensores
 const MapView = ({ data }: MapViewProps) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -18,15 +18,16 @@ const MapView = ({ data }: MapViewProps) => {
   // Validar datos
   if (!data || !Array.isArray(data)) {
     return (
-      <div className="h-[500px] flex items-center justify-center bg-gray-100 rounded-xl">
+      <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
         <p className="text-gray-500">No hay datos para mostrar en el mapa</p>
       </div>
     );
   }
 
+  // Inicializar mapa
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
-
+    
     try {
       map.current = new maplibregl.Map({
         container: mapContainer.current,
@@ -39,10 +40,10 @@ const MapView = ({ data }: MapViewProps) => {
         new maplibregl.NavigationControl({
           showCompass: true,
           showZoom: true,
-        }), 
+        }),
         'top-right'
       );
-
+      // Agregar control de escala
       map.current.addControl(
         new maplibregl.ScaleControl({
           maxWidth: 100,
@@ -50,22 +51,22 @@ const MapView = ({ data }: MapViewProps) => {
         }),
         'bottom-left'
       );
-
+      // Agregar control de zoom
       map.current.on('load', () => {
         setMapLoaded(true);
         setMapError(null);
       });
-
+      // Mostrar error en caso de error
       map.current.on('error', (e) => {
         console.error('MapLibre error:', e);
         setMapError('Error al cargar el mapa');
       });
-
+      
     } catch (error) {
       console.error('Error inicializando mapa:', error);
       setMapError('Error al inicializar el mapa');
     }
-
+    // Limpiar mapa cuando se desconecte
     return () => {
       if (map.current) {
         map.current.remove();
@@ -74,99 +75,124 @@ const MapView = ({ data }: MapViewProps) => {
     };
   }, []);
 
+  // Actualizar marcadores cuando cambian los datos
   useEffect(() => {
     if (!map.current || !mapLoaded || !data || data.length === 0) return;
 
+    console.log('🗺️ Actualizando marcadores con datos:', data);
+
     try {
-      // Limpiar marcadores antiguos
-      Object.values(markersRef.current).forEach((marker) => {
-        try {
-          marker.remove();
-        } catch (e) {
-          console.warn('Error removing marker:', e);
+      // Obtener IDs actuales
+      const currentDeviceIds = new Set(data.map(d => d.deviceId).filter(Boolean));
+      
+      // Remover marcadores que ya no existen
+      Object.keys(markersRef.current).forEach((deviceId) => {
+        if (!currentDeviceIds.has(deviceId)) {
+          markersRef.current[deviceId].remove();
+          delete markersRef.current[deviceId];
         }
       });
-      markersRef.current = {};
 
-      // Agregar nuevos marcadores
+      // Actualizar o crear marcadores
       data.forEach((item, index) => {
         if (!item || typeof item.latitude !== 'number' || typeof item.longitude !== 'number') {
           return;
         }
+        // Obtener marcador existente o crear uno nuevo
+        const { latitude, longitude, deviceId, alert } = item;
+        const hasAlerts = alert && alert.length > 0;
+        const color = hasAlerts ? '#ef4444' : '#3b82f6'; // Rojo si hay alertas, azul normal
 
-        const el = document.createElement('div');
-        el.style.cssText = `
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background-color: ${item.alert ? '#ef4444' : '#3b82f6'};
-          border: 4px solid white;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          transition: all 0.3s ease;
-        `;
-        
-        if (index === 0) {
-          el.innerHTML = '🚗';
-          el.style.fontSize = '20px';
-        }
-
-        const popupContent = `
-          <div style="padding: 12px; font-family: system-ui; min-width: 220px;">
-            <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
-              📍 Datos del Vehículo
+        // Si el marcador ya existe, actualizarlo
+        if (deviceId && markersRef.current[deviceId]) {
+          const marker = markersRef.current[deviceId];
+          const currentLngLat = marker.getLngLat();
+          
+          // Actualizar posición si cambió
+          if (currentLngLat.lat !== latitude || currentLngLat.lng !== longitude) {
+            marker.setLngLat([longitude, latitude]);
+          }
+          
+          // Actualizar color del elemento HTML del marcador
+          const markerElement = marker.getElement();
+          markerElement.style.backgroundColor = color;
+          
+          // Actualizar popup del marcador en el mapa
+          const popupContent = `
+            <div style="padding: 12px; font-family: system-ui;">
+              <div style="font-weight: bold; margin-bottom: 8px;">📍 Vehículo ${deviceId}</div>
+              <div style="font-size: 14px; line-height: 1.6;">
+                <div>⛽ Combustible: <strong>${Number(item.fuelLevel).toFixed(1)} L</strong></div>
+                <div>🌡️ Temperatura: <strong>${Number(item.temperature).toFixed(1)} °C</strong></div>
+                <div>🚀 Velocidad: <strong>${Number(item.speed).toFixed(0)} km/h</strong></div>
+                <div>⏰ Hora: ${new Date(item.timestamp).toLocaleTimeString()}</div>
+                ${hasAlerts ? `<div style="color: #ef4444; font-weight: bold; margin-top: 8px;">⚠️ ${alert}</div>` : ''}
+              </div>
             </div>
-            <div style="display: grid; gap: 8px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280; font-size: 13px;">⛽ Combustible:</span>
-                <span style="font-weight: 600; color: #059669; font-size: 14px;">${Number(item.fuelLevel).toFixed(1)} L</span>
+          `;
+          marker.setPopup(
+            new maplibregl.Popup({ offset: 30, maxWidth: '300px' }).setHTML(popupContent)
+          );
+          
+        } else {
+          // Crear nuevo marcador
+          const el = document.createElement('div');
+          el.style.cssText = `
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: ${color};
+            border: 4px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+          `;
+          // Si es el primer marcador, agregar un icono
+          if (index === 0) {
+            el.innerHTML = '🚗';
+            el.style.fontSize = '20px';
+          }
+          // Crear contenido del popup
+          const popupContent = `
+            <div style="padding: 12px; font-family: system-ui;">
+              <div style="font-weight: bold; margin-bottom: 8px;">📍 Vehículo ${deviceId || 'Desconocido'}</div>
+              <div style="font-size: 14px; line-height: 1.6;">
+                <div>⛽ Combustible: <strong>${Number(item.fuelLevel).toFixed(1)} L</strong></div>
+                <div>🌡️ Temperatura: <strong>${Number(item.temperature).toFixed(1)} °C</strong></div>
+                <div>🚀 Velocidad: <strong>${Number(item.speed).toFixed(0)} km/h</strong></div>
+                <div>⏰ Hora: ${new Date(item.timestamp).toLocaleTimeString()}</div>
+                ${hasAlerts ? `<div style="color: #ef4444; font-weight: bold; margin-top: 8px;">⚠️ ${alert}</div>` : ''}
               </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280; font-size: 13px;">🌡️ Temperatura:</span>
-                <span style="font-weight: 600; color: #ea580c; font-size: 14px;">${Number(item.temperature).toFixed(1)} °C</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280; font-size: 13px;">🚀 Velocidad:</span>
-                <span style="font-weight: 600; color: #2563eb; font-size: 14px;">${Number(item.speed).toFixed(0)} km/h</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280; font-size: 13px;">⏰ Hora:</span>
-                <span style="font-weight: 600; color: #4b5563; font-size: 13px;">${new Date(item.timestamp).toLocaleTimeString()}</span>
-              </div>
-              ${item.alert ? `
-                <div style="margin-top: 8px; padding: 8px; background-color: #fee2e2; border-radius: 6px; border-left: 3px solid #ef4444;">
-                  <div style="color: #991b1b; font-weight: bold; font-size: 12px;">⚠️ ALERTA</div>
-                  <div style="color: #7f1d1d; font-size: 11px; margin-top: 4px;">${item.alert}</div>
-                </div>
-              ` : ''}
             </div>
-          </div>
-        `;
-
-        const popup = new maplibregl.Popup({ 
-          offset: 30,
-          closeButton: true,
-          closeOnClick: false,
-          maxWidth: '300px'
-        }).setHTML(popupContent);
-
-        const marker = new maplibregl.Marker(el)
-          .setLngLat([item.longitude, item.latitude])
-          .setPopup(popup)
-          .addTo(map.current!);
-
-        markersRef.current[item.id] = marker;
-
-        if (index === 0) {
-          setTimeout(() => marker.togglePopup(), 500);
+          `;
+          // Crear marcador en el mapa
+          const popup = new maplibregl.Popup({
+            offset: 30,
+            closeButton: true,
+            closeOnClick: false,
+            maxWidth: '300px'
+          }).setHTML(popupContent);
+          // Crear marcador
+          const marker = new maplibregl.Marker(el)
+            .setLngLat([longitude, latitude])
+            .setPopup(popup)
+            .addTo(map.current!);
+          // Agregar marcador al mapa
+          if (deviceId) {
+            markersRef.current[deviceId] = marker;
+          }
+          // Mostrar popup si es el primer marcador
+          if (index === 0) {
+            setTimeout(() => marker.togglePopup(), 500);
+          }
         }
       });
 
-      // Ajustar vista
+      // Ajustar vista si hay datos
       if (data.length > 0) {
         const bounds = new maplibregl.LngLatBounds();
         data.forEach((item) => {
@@ -174,33 +200,34 @@ const MapView = ({ data }: MapViewProps) => {
             bounds.extend([item.longitude, item.latitude]);
           }
         });
-        
-        map.current.fitBounds(bounds, { 
+        // Ajustar vista al mapa
+        map.current.fitBounds(bounds, {
           padding: 80,
           maxZoom: 14,
           duration: 1000
         });
       }
+      // Mostrar mensaje de actualización de marcadores
+
     } catch (error) {
       console.error('Error actualizando marcadores:', error);
     }
   }, [data, mapLoaded]);
-
+  // Si hay un error al cargar el mapa, mostrar mensaje de error
   if (mapError) {
     return (
-      <div className="h-[500px] flex items-center justify-center bg-red-50 rounded-xl border-2 border-red-200">
-        <div className="text-center p-6">
-          <p className="text-red-600 font-semibold mb-2">⚠️ Error al cargar el mapa</p>
-          <p className="text-red-500 text-sm">{mapError}</p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full bg-red-50 rounded-lg p-8">
+        <div className="text-red-500 text-xl mb-2">⚠️ Error al cargar el mapa</div>
+        <p className="text-gray-600">{mapError}</p>
       </div>
     );
   }
-
+  // Mostrar mapa
   return (
-    <div
-      ref={mapContainer}
-      className="w-full h-[500px] rounded-xl overflow-hidden border-2 border-gray-200"
+    <div 
+      ref={mapContainer} 
+      className="w-full h-full rounded-lg shadow-lg"
+      style={{ minHeight: '400px' }}
     />
   );
 };
