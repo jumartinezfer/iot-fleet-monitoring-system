@@ -13,13 +13,14 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 
+// Clase de controlador para gestionar dispositivos
 @ApiTags('Devices')
 @Controller('devices')
 @UseGuards(AuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) {}
-
+  // Endpoint para crear un nuevo dispositivo
   @Post()
   @ApiOperation({
     summary: 'Crear nuevo dispositivo IoT',
@@ -34,6 +35,7 @@ export class DevicesController {
     @Body() createDeviceDto: CreateDeviceDto,
     @CurrentUser() user: User,
   ) {
+    // Crear dispositivo
     const device = await this.devicesService.create(createDeviceDto, user);
     return {
       message: 'Dispositivo creado exitosamente',
@@ -49,7 +51,7 @@ export class DevicesController {
       },
     };
   }
-
+  // Endpoint para obtener todos los dispositivos
   @Get()
   @ApiOperation({
     summary: 'Listar dispositivos',
@@ -66,7 +68,7 @@ export class DevicesController {
       ),
     };
   }
-
+  // Endpoint para obtener un dispositivo específico
   @Get(':id')
   @ApiOperation({
     summary: 'Obtener dispositivo por ID',
@@ -77,6 +79,7 @@ export class DevicesController {
   @ApiResponse({ status: 401, description: 'No autenticado' })
   @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
   async findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    // Obtener dispositivo
     const device = await this.devicesService.findOne(id, user);
     return {
       device: {
@@ -93,7 +96,7 @@ export class DevicesController {
       },
     };
   }
-
+  // Endpoint para actualizar un dispositivo
   @Patch(':id')
 @ApiOperation({ 
   summary: 'Actualizar dispositivo',
@@ -110,6 +113,7 @@ async update(
   @Body() updateData: Partial<CreateDeviceDto>,
   @CurrentUser() user: User,
 ) {
+    // Actualizar dispositivo
   const device = await this.devicesService.update(id, updateData, user);
   return {
     message: 'Dispositivo actualizado exitosamente',
@@ -125,7 +129,7 @@ async update(
     },
   };
 }
-
+// Endpoint para eliminar un dispositivo
 @Delete(':id')
 @ApiOperation({ 
   summary: 'Eliminar dispositivo',

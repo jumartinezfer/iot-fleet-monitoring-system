@@ -8,6 +8,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
 
+// Clase para registrarse
 export class RegisterDto {
   @ApiProperty({
     example: 'admin@test.com',

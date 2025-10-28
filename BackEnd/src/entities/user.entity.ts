@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Device } from './device.entity';
 
+// Entidad para gestionar usuarios
 export enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
@@ -27,6 +28,7 @@ export class User {
   @Column()
   name: string;
 
+  // Columna para almacenar el rol del usuario
   @Column({
     type: 'enum',
     enum: UserRole,
@@ -43,6 +45,7 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  // Relación: Muchos dispositivos pertenecen a un usuario
   @OneToMany(() => Device, (device) => device.user)
   devices: Device[];
 }

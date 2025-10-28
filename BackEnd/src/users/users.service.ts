@@ -10,7 +10,7 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
   ) {}
-
+  // Crear nuevo usuario
   async create(
     email: string,
     password: string,
@@ -33,20 +33,20 @@ export class UsersService {
       email,
       password: hashedPassword,
       name,
-      role: (role as UserRole) || UserRole.USER, // Cast explícito
+      role: (role as UserRole) || UserRole.USER, 
     });
-
+    // Guardar usuario
     return this.usersRepository.save(user);
   }
-
+  // Obtener usuario por email
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { email } });
   }
-
+  // Obtener usuario por ID
   async findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
   }
-
+  // Validar contraseña
   async validatePassword(
     password: string,
     hashedPassword: string,

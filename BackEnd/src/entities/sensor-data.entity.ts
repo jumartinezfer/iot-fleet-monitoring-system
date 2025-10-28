@@ -8,6 +8,7 @@ import {
 
 import { Device } from './device.entity';
 
+// Entidad para gestionar datos de sensores
 @Entity('sensor_data')
 export class SensorData {
   @PrimaryGeneratedColumn('uuid')

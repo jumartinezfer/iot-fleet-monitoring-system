@@ -10,6 +10,7 @@ import {
 import { User } from './user.entity';
 import { SensorData } from './sensor-data.entity';
 
+// Entidad para gestionar dispositivos
 @Entity('devices')
 export class Device {
   @PrimaryGeneratedColumn('uuid')
@@ -41,6 +42,9 @@ export class Device {
   user: User;
 
   // Relación: Un dispositivo tiene muchos registros de sensores
-  @OneToMany(() => SensorData, (sensorData) => sensorData.device)
+  @OneToMany(() => SensorData, (sensorData) => sensorData.device, {
+    cascade: true,
+    onDelete: 'CASCADE', // Borrar registros de sensores también
+  })
   sensorData: SensorData[];
 }

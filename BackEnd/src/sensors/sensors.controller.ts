@@ -28,7 +28,7 @@ import { User, UserRole } from '../entities/user.entity';
 @Controller('sensors')
 export class SensorsController {
   constructor(private readonly sensorsService: SensorsService) {}
-
+    // Endpoint para ingresar datos de sensores
   @Post('ingest')
   @ApiOperation({
     summary: 'Ingresar datos de sensores IoT',
@@ -49,6 +49,7 @@ export class SensorsController {
       },
     },
   })
+    // Endpoint para ingresar datos de sensores
   @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
   async ingestData(@Body() sensorDataDto: SensorDataDto) {
     const sensorData = await this.sensorsService.ingestData(sensorDataDto);
@@ -58,7 +59,7 @@ export class SensorsController {
       timestamp: sensorData.timestamp,
     };
   }
-
+  // Endpoint para obtener los últimos datos de un dispositivo
   @Get('latest/:deviceId')
   @UseGuards(AuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -77,6 +78,7 @@ export class SensorsController {
     description: 'Cantidad de registros a retornar (default: 10)',
     example: 10,
   })
+    // Endpoint para obtener los últimos datos de un dispositivo
   @ApiResponse({ status: 200, description: 'Últimos datos del dispositivo' })
   @ApiResponse({ status: 401, description: 'No autenticado' })
   @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
@@ -90,7 +92,7 @@ export class SensorsController {
     );
     return { data };
   }
-
+  // Endpoint para obtener datos históricos de un dispositivo
   @Get('historical/:deviceId')
   @UseGuards(AuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -129,7 +131,7 @@ export class SensorsController {
     );
     return { data };
   }
-
+  // Endpoint para obtener alertas activas (solo admins)
   @Get('alerts')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -158,6 +160,7 @@ export class SensorsController {
       },
     },
   })
+    // Endpoint para obtener alertas activas (solo admins)
   @ApiResponse({ status: 401, description: 'No autenticado' })
   @ApiResponse({ status: 403, description: 'Acceso denegado - Solo admins' })
   async getActiveAlerts() {

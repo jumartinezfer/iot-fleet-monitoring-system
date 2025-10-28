@@ -16,15 +16,13 @@ constructor(
     private eventsGateway: EventsGateway,
 ) {}
 
-/**
-   * Ingesta de datos de sensores con cálculo predictivo
-   */
+// Ingesta de datos de sensores con cálculo predictivo
 async ingestData(sensorDataDto: SensorDataDto): Promise<SensorData> {
     // Buscar dispositivo
     const device = await this.devicesService.findByDeviceId(
     sensorDataDto.deviceId,
     );
-
+    // Verificar que el dispositivo existe
     if (!device) {
     throw new NotFoundException('Dispositivo no encontrado');
     }
@@ -46,7 +44,7 @@ async ingestData(sensorDataDto: SensorDataDto): Promise<SensorData> {
     sensorDataDto.fuelConsumptionRate || 0,
     sensorDataDto.speed || 0,
     );
-
+    // Guardar datos de sensores
     sensorData.alert = alert;
 
     const savedData = await this.sensorDataRepository.save(sensorData);
@@ -64,7 +62,7 @@ async ingestData(sensorDataDto: SensorDataDto): Promise<SensorData> {
     timestamp: savedData.timestamp,
     });
 
-    // Si hay alerta, notificar a admins
+    // Si hay alerta, notifica a admins
     if (alert) {
     this.eventsGateway.sendAlertToAdmins({
         deviceId: sensorDataDto.deviceId,
@@ -76,14 +74,11 @@ async ingestData(sensorDataDto: SensorDataDto): Promise<SensorData> {
         timestamp: savedData.timestamp,
     });
     }
-
+    // Devolver datos de sensores
     return savedData;
 }
 
-/**
-   * Algoritmo predictivo de combustible
-   * Alerta si el nivel de combustible baja a menos de 1 hora de autonomía
-   */
+//Algoritmo predictivo de combustible, alerta si el nivel de combustible baja a menos de 1 hora de autonomía
 private predictFuelAlert(
     fuelLevel: number,
     fuelConsumptionRate: number,
@@ -96,7 +91,7 @@ private predictFuelAlert(
       // Estimación simplificada: consumo = (velocidad * 0.08) L/h Esto es una aproximación
       estimatedConsumption = speed * 0.08;
     }
-
+    // Verificar si hay suficiente información
     if (estimatedConsumption === 0) {
       return null; // No hay suficiente información
     }
@@ -119,15 +114,13 @@ private predictFuelAlert(
     return null;
 }
 
-/**
-   * Obtener últimos datos de un dispositivo
-   */
+// Obtener últimos datos de un dispositivo
 async getLatestData(
     deviceId: string,
     limit: number = 10,
 ): Promise<SensorData[]> {
     const device = await this.devicesService.findByDeviceId(deviceId);
-
+    // Verificar que el dispositivo existe
     if (!device) {
     throw new NotFoundException('Dispositivo no encontrado');
     }
@@ -139,14 +132,13 @@ async getLatestData(
     });
 }
 
-/**
-   * Obtener datos históricos con filtros
-   */
+// Obtener datos históricos con filtros
 async getHistoricalData(
     deviceId: string,
     startDate?: Date,
     endDate?: Date,
 ): Promise<SensorData[]> {
+        // Verificar que el dispositivo existe
     const device = await this.devicesService.findByDeviceId(deviceId);
 
     if (!device) {
@@ -169,9 +161,7 @@ async getHistoricalData(
     return query.getMany();
 }
 
-/**
-   * Obtener alertas activas (solo para admin)
-   */
+// Obtener alertas activas (solo para admin)
 async getActiveAlerts(): Promise<SensorData[]> {
     return this.sensorDataRepository
     .createQueryBuilder('sensor_data')
@@ -182,9 +172,7 @@ async getActiveAlerts(): Promise<SensorData[]> {
     .getMany();
 }
 
-/**
-   * Obtener estadísticas de un dispositivo
-   */
+//Obtener estadísticas de un dispositivo
 async getDeviceStatistics(deviceId: string): Promise<any> {
     const device = await this.devicesService.findByDeviceId(deviceId);
 

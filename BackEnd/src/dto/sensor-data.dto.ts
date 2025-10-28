@@ -1,6 +1,7 @@
 import { IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+// Clase para ingresar datos de sensores
 export class SensorDataDto {
   @ApiProperty({
     example: 'DEV-ABCD-1234',

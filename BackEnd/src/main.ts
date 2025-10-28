@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Habilitar CORS
+  // Habilitar CORS (desde localhost)
   app.enableCors({
     origin: ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
@@ -14,7 +14,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Habilitar validación global
+  // Habilitar validación global 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -23,7 +23,7 @@ async function bootstrap() {
     }),
   );
 
-  // Configuración de Swagger/OpenAPI
+  // Configuración de Swagger
   const config = new DocumentBuilder()
     .setTitle('IoT Fleet Monitoring API')
     .setDescription(
@@ -72,7 +72,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-
+  // Mostrar mensajes de inicio
   console.log(`\n🚀 Backend server running on: http://localhost:${port}`);
   console.log(`📡 WebSocket server available at: ws://localhost:${port}`);
   console.log(

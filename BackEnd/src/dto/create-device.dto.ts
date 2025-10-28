@@ -1,6 +1,7 @@
 import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+// Clase para crear un nuevo dispositivo
 export class CreateDeviceDto {
   @ApiProperty({
     example: 'DEV-ABCD-1234',

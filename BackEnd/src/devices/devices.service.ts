@@ -16,7 +16,7 @@ export class DevicesService {
     @InjectRepository(Device)
     private devicesRepository: Repository<Device>,
   ) {}
-
+  // Crear nuevo dispositivo
   async create(createDeviceDto: CreateDeviceDto, user: User): Promise<Device> {
     // Verificar si el deviceId ya existe
     const existingDevice = await this.devicesRepository.findOne({
@@ -26,32 +26,43 @@ export class DevicesService {
     if (existingDevice) {
       throw new ConflictException('El deviceId ya existe');
     }
-
+    // Crear dispositivo
     const device = this.devicesRepository.create({
       ...createDeviceDto,
       user,
     });
-
+    // Guardar dispositivo
     return this.devicesRepository.save(device);
   }
-
+  // Obtener todos los dispositivos
   async findAll(user: User): Promise<Device[]> {
-    // Admin ve todos, usuarios normales solo los suyos
-    if (user.role === 'admin') {
-      return this.devicesRepository.find({ relations: ['user'] });
-    }
-
-    return this.devicesRepository.find({
-      where: { user: { id: user.id } },
-    });
+    // Solo los usuarios administradores vean todos los dispositivos
+    const query = this.devicesRepository.createQueryBuilder('device')
+    .leftJoinAndSelect('device.user', 'user')
+    .where('device.isActive = :isActive', { isActive: true });
+    // Solo los usuarios normales vean los dispositivos de su usuario
+  if (user.role !== UserRole.ADMIN) {
+    query.andWhere('device.userId = :userId', { userId: user.id });
   }
-
+  // Obtener dispositivos
+  const devices = await query.getMany();
+  
+  // Enmascarar el deviceId para usuarios no-admin
+  const isAdmin = user.role === UserRole.ADMIN;
+  
+  return devices.map(device => {
+    const maskedDevice = { ...device };
+    maskedDevice.deviceId = this.maskDeviceId(device.deviceId, isAdmin);
+    return maskedDevice;
+  });
+}
+  // Obtener un dispositivo específico
   async findOne(id: string, user: User): Promise<Device> {
     const device = await this.devicesRepository.findOne({
       where: { id },
       relations: ['user'],
     });
-
+    // Verificar que el dispositivo existe
     if (!device) {
       throw new NotFoundException('Dispositivo no encontrado');
     }
@@ -63,7 +74,7 @@ export class DevicesService {
 
     return device;
   }
-
+  // Obtener un dispositivo por ID
   async findByDeviceId(deviceId: string): Promise<Device | null> {
     return this.devicesRepository.findOne({
       where: { deviceId },
@@ -79,7 +90,7 @@ export class DevicesService {
     if (isAdmin) {
       return deviceId;
     }
-
+    // Enmascarar el deviceId para usuarios no-admin
     const parts = deviceId.split('-');
     if (parts.length >= 3) {
       parts[1] = '****';
@@ -87,9 +98,7 @@ export class DevicesService {
     return parts.join('-');
   }
 
-  /**
-   * Formatea dispositivos aplicando enmascaramiento según rol
-   */
+  //Formatea dispositivos aplicando enmascaramiento según rol   
   formatDevices(devices: Device[], isAdmin: boolean) {
     return devices.map((device) => ({
       id: device.id,
@@ -101,13 +110,13 @@ export class DevicesService {
       createdAt: device.createdAt,
     }));
   }
-
+  // Actualizar dispositivo
   async update(id: string, updateData: Partial<CreateDeviceDto>, user: User): Promise<Device> {
   const device = await this.devicesRepository.findOne({
     where: { id },
     relations: ['user'],
   });
-
+  // Verificar que el dispositivo existe
   if (!device) {
     throw new NotFoundException('Dispositivo no encontrado');
   }
@@ -125,12 +134,14 @@ export class DevicesService {
   return await this.devicesRepository.save(device);
 }
 
+// Eliminar dispositivo (SOFT DELETE)
 async remove(id: string, user: User): Promise<void> {
   const device = await this.devicesRepository.findOne({
     where: { id },
     relations: ['user'],
   });
 
+  // Verificar que el dispositivo existe
   if (!device) {
     throw new NotFoundException('Dispositivo no encontrado');
   }
@@ -144,6 +155,25 @@ async remove(id: string, user: User): Promise<void> {
   device.isActive = false;
   await this.devicesRepository.save(device);
 }
+
+// Eliminar dispositivo (HARD DELETE)
+// async remove(id: string, user: User): Promise<void> {
+// const device = await this.deviceRepository.findOne({
+//     where: { id },
+///     relations: ['user'],
+//   });
+
+//   if (!device) {
+//     throw new NotFoundException('Dispositivo no encontrado');
+//   }
+
+//   if (user.role !== UserRole.ADMIN && device.user.id !== user.id) {
+//     throw new ForbiddenException('No tienes permiso para eliminar este dispositivo');
+//   }
+
+//   // HARD DELETE: Elimina permanentemente de la base de datos
+//   await this.deviceRepository.remove(device);
+// }
 
 }
 

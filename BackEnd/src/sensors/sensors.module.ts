@@ -7,6 +7,7 @@ import { DevicesModule } from '../devices/devices.module';
 import { AuthModule } from '../auth/auth.module';
 import { WebsocketModule } from '../websocket/websocket.module'; // ← Importación correcta
 
+// Importar dependencias
 @Module({
   imports: [
     TypeOrmModule.forFeature([SensorData]),
