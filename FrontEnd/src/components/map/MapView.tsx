@@ -35,7 +35,7 @@ const MapView = ({ data }: MapViewProps) => {
         center: [-16.2546, 28.4682],
         zoom: 10,
       });
-
+      // Agregar control de navegación
       map.current.addControl(
         new maplibregl.NavigationControl({
           showCompass: true,

@@ -85,7 +85,7 @@ export const useSensorsStore = create<SensorsState>()(
         return Object.values(state.latestByDevice); // Devolver datos del mapa
       },
     }),
-    {
+    { // Configuración de persist
       name: 'sensors-storage',
       partialize: (state) => ({ // Parcializar store
         sensorData: state.sensorData,
