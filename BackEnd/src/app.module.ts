@@ -14,7 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { DevicesModule } from './devices/devices.module';
 import { SensorsModule } from './sensors/sensors.module';
-import { WebsocketModule } from './websocket/websocket.module'; // ← Importación correcta
+import { WebsocketModule } from './websocket/websocket.module'; // ✅ CORREGIDO: Ruta correcta
 
 @Module({
   imports: [
@@ -30,11 +30,11 @@ import { WebsocketModule } from './websocket/websocket.module'; // ← Importaci
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST', 'localhost'),
-        port: configService.get<number>('DATABASE_PORT', 5433),
-        username: configService.get<string>('DATABASE_USER', 'postgres'),
-        password: configService.get<string>('DATABASE_PASSWORD', '0123456789'),
-        database: configService.get<string>('DATABASE_NAME', 'iot_fleet_db'),
+        host: configService.get('DATABASE_HOST', 'localhost'),
+        port: configService.get('DATABASE_PORT', 5433),
+        username: configService.get('DATABASE_USER', 'postgres'),
+        password: configService.get('DATABASE_PASSWORD', '0123456789'),
+        database: configService.get('DATABASE_NAME', 'iot_fleet_db'),
         entities: [User, Device, SensorData],
         synchronize: true,
         logging: false,
@@ -46,7 +46,7 @@ import { WebsocketModule } from './websocket/websocket.module'; // ← Importaci
     UsersModule,
     DevicesModule,
     SensorsModule,
-    WebsocketModule, // ← Añadir aquí
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

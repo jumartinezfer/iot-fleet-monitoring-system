@@ -1,11 +1,16 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { EventsGateway } from './events.gateway';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
+import { DevicesModule } from '../devices/devices.module';
 
 @Module({
-  imports: [AuthModule, UsersModule],
+  imports: [
+    forwardRef(() => AuthModule),
+    forwardRef(() => UsersModule),
+    forwardRef(() => DevicesModule),
+  ],
   providers: [EventsGateway],
-  exports: [EventsGateway], // Exportar para usarlo en otros módulos
+  exports: [EventsGateway],
 })
 export class WebsocketModule {}
