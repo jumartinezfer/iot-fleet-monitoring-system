@@ -18,6 +18,6 @@ Sistema completo de monitoreo en tiempo real para flotas vehiculares con predicc
 - 🗺️ Dashboard con mapas interactivos
 - 📊 Gráficos históricos de velocidad/combustible
 - 🔒 Enmascaramiento de IDs para usuarios no-admin
-- 💾 Funcionalidad offline con IndexedDB
+
 
 ## 🚀 Quick Start
