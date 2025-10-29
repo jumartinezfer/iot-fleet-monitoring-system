@@ -41,7 +41,7 @@ Descargar desde https://www.postgresql.org/download/windows/
 
 ## Clonación del Repositorio
 
-git clone https://github.com/tu-usuario/iot-fleet-monitoring.git
+git clone https://github.com/jumartinezfer/iot-fleet-monitoring.git
 
 cd iot-fleet-monitoring
 
